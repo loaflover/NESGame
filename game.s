@@ -126,9 +126,12 @@ WaitForVblank:
 MovePaddle:
     JSR ReadController
     LDX buttons ; load buttons into register x
-    CPX #0
-    BEQ  nopress
-    MovePaddlePieces:
+    CPX #%00000001
+    BEQ  MovePaddlePiecesRight
+    CPX #%00000010
+    BEQ  MovePaddlePiecesLeft
+    BRA nopress
+    MovePaddlePiecesRight:
         LDA $0203   ; load sprite X (horizontal) position
         CLC         ; make sure the carry flag is clear
         ADC #$01    ; A = A + 1
@@ -150,7 +153,30 @@ MovePaddle:
         CLC         ; make sure the carry flag is clear
         ADC #$01    ; A = A + 1
         STA $020f   ; save sprite X (horizontal) position
-        
+        BRA nopress
+    MovePaddlePiecesLeft:
+        LDA $0203   ; load sprite X (horizontal) position
+        CLC         ; make sure the carry flag is clear
+        SBC #$01    ; A = A + 1
+        STA $0203   ; save sprite X (horizontal) position
+
+
+        LDA $0207   ; load sprite X (horizontal) position
+        CLC         ; make sure the carry flag is clear
+        SBC #$01    ; A = A + 1
+        STA $0207   ; save sprite X (horizontal) position
+
+
+        LDA $020b   ; load sprite X (horizontal) position
+        CLC         ; make sure the carry flag is clear
+        SBC #$01    ; A = A + 1
+        STA $020b   ; save sprite X (horizontal) position
+
+        LDA $020f   ; load sprite X (horizontal) position
+        CLC         ; make sure the carry flag is clear
+        SBC #$01    ; A = A + 1
+        STA $020f   ; save sprite X (horizontal) position
+        BRA nopress
     nopress:
     RTS
 .segment "VECTORS"
