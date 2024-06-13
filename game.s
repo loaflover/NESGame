@@ -28,9 +28,7 @@ buttons: .RES 1
         STX $2000
         STX $2001
 
-        : ; this waits for vblink. the :- looks back at the last blank label, which just so happens to be on this line
-        BIT $2002
-        BPL :-
+        JSR WaitForVblank
 
 
         TXA ; x is 0. this sets a to zero aswell
@@ -48,9 +46,7 @@ buttons: .RES 1
             inx 
             CPX #$00 ; compares x to 0. if x reached its maximum (FF), adding 1 would make it 0.
             BNE clearmem ; if x was not 0, jump back.
-        : ; wait for another vblank
-        BIT $2002
-        BPL :-
+        JSR WaitForVblank
 
         LDA #$02 ; copy sprites to the right address
         STA $4014
@@ -95,15 +91,7 @@ buttons: .RES 1
     
     LDA #$02 ; load sprite range
     STA $4014
-    JSR ReadController
-    LDX buttons ; load buttons into register x
-    CPX #0
-    BEQ  nopress
-    LDA $0203   ; load sprite X (horizontal) position
-    CLC         ; make sure the carry flag is clear
-    ADC #$01    ; A = A + 1
-    STA $0203   ; save sprite X (horizontal) position
-    nopress:
+    JSR MovePaddle
     rti
 ;-----------------------------------;
 PALETTEDATA:
@@ -111,10 +99,10 @@ PALETTEDATA:
 	.byte $31, $0F, $15, $30, 	$00, $0F, $11, $30, 	$00, $0F, $30, $27, 	$00, $3C, $2C, $1C 	;sprite palettes
     SPRITEDATA:
     ;Y, SPRITE NUM, attributes, X
-	.byte $40, $01, $00, $40
-	.byte $40, $02, $00, $48
-	.byte $40, $03, $00, $50
-	.byte $40, $04, $00, $58
+	.byte $D0, $13, %01000000, $40
+	.byte $D0, $12, $00, $48
+	.byte $D0, $12, $00, $50
+	.byte $D0, $13, $00, $58
 
 ;--------------subroutines--------------;
 ReadController:
@@ -130,6 +118,41 @@ ReadController:
         DEX
         BNE ReadControllerLoop
         RTS
+
+WaitForVblank:
+    BIT $2002
+    BPL WaitForVblank
+    RTS
+MovePaddle:
+    JSR ReadController
+    LDX buttons ; load buttons into register x
+    CPX #0
+    BEQ  nopress
+    MovePaddlePieces:
+        LDA $0203   ; load sprite X (horizontal) position
+        CLC         ; make sure the carry flag is clear
+        ADC #$01    ; A = A + 1
+        STA $0203   ; save sprite X (horizontal) position
+
+
+        LDA $0207   ; load sprite X (horizontal) position
+        CLC         ; make sure the carry flag is clear
+        ADC #$01    ; A = A + 1
+        STA $0207   ; save sprite X (horizontal) position
+
+
+        LDA $020b   ; load sprite X (horizontal) position
+        CLC         ; make sure the carry flag is clear
+        ADC #$01    ; A = A + 1
+        STA $020b   ; save sprite X (horizontal) position
+
+        LDA $020f   ; load sprite X (horizontal) position
+        CLC         ; make sure the carry flag is clear
+        ADC #$01    ; A = A + 1
+        STA $020f   ; save sprite X (horizontal) position
+        
+    nopress:
+    RTS
 .segment "VECTORS"
     .word nmi, reset, 0
 .segment "CHARS"
