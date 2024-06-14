@@ -25,7 +25,7 @@
 .segment "ZEROPAGE"
 buttons: .RES 1
 PaddlePosX: .RES 1 ; these signify the leftmost paddle piece
-PaddlePosY: .RES 1 ; (const)
+frame_ready: .RES 1
 .segment "STARTUP"
     reset:
 
@@ -83,45 +83,59 @@ PaddlePosY: .RES 1 ; (const)
             INX 
             CPX #$20
             BNE LOADPALETTES
-        LDX #$00
-        LOADSPRITES:
-            LDA SPRITEDATA, x ; loads palletes to memory. $2007 increments automatically.
-            STA $0200, x
-            INX 
-            CPX #$10 ; 4 sprites times 4 bytes per sprite
-            BNE LOADSPRITES
-
+        LDX #$F0
+        STX PaddlePosX
         CLI ; enable interrupts
         LDA #%10010000 ; generate NMI when Vblank happens. second bit tells PPU to use the second half of the sprites for background.
         STA $2000 
         LDA #%00011110 ; show sprites and background
         STA $2001
         forever:
-
-
-
-            ; read input
+            JSR gameCode
             jmp forever
-
 ;-----------------------------------;
-    nmi:
-    
+nmi:
+    pha
+    LDA frame_ready
+    BNE PpuDone
     LDA #$02 ; load sprite range
     STA $4014
-    JSR MovePaddle
+    ; Mark that we've handled the start of this frame already.
+    LDA #$01
+    STA frame_ready
+
+    PpuDone:
+    pla 
     rti
 ;-----------------------------------;
 PALETTEDATA:
 	.byte $00, $0F, $01, $10, 	$00, $0A, $15, $01, 	$00, $29, $28, $27, 	$00, $34, $24, $14 	;background palettes
 	.byte $31, $0F, $15, $30, 	$00, $0F, $11, $30, 	$00, $0F, $30, $27, 	$00, $3C, $2C, $1C 	;sprite palettes
-SPRITEDATA:
+PdadleDATA:
     ;Y, SPRITE NUM, attributes, X
-	.byte $D0, $13, %01000000, $40
-	.byte $D0, $12, $00, $48
-	.byte $D0, $12, $00, $50
-	.byte $D0, $13, $00, $58
+	.byte PADDLE_HEIGHT, $13, %01000000, PaddlePosX
+	.byte PADDLE_HEIGHT, $12, $00, PaddlePosX + $8
+	.byte PADDLE_HEIGHT, $12, $00, PaddlePosX + $10
+	.byte PADDLE_HEIGHT, $13, $00, PaddlePosX + $18
 
 ;--------------subroutines--------------;
+gameCode:
+    ; checks if NMI has run yet
+    :
+    LDA frame_ready
+    BEQ :- 
+
+    JSR disable_all_oam_entries
+    JSR MovePaddle
+    LOADSPRITES:
+        LDA PdadleDATA, x ; loads palletes to memory. $2007 increments automatically.
+        STA $0200, x
+        INX 
+        CPX #$10 ; 4 sprites times 4 bytes per sprite
+        BNE LOADSPRITES
+    LDA #$00
+    STA frame_ready
+    RTS
 ReadController:
     LDA #$01
     STA $4016
@@ -147,56 +161,31 @@ MovePaddle:
     BEQ  MovePaddlePiecesRight
     CPX #%00000010
     BEQ  MovePaddlePiecesLeft
-    JMP nopress
+    RTS
     MovePaddlePiecesRight:
     
-        LDA $0203   ; load sprite X (horizontal) position
-        CLC         ; make sure the carry flag is clear
-        ADC #$01    ; A = A + 1
-        STA $0203   ; save sprite X (horizontal) position
-
-
-        LDA $0207   ; load sprite X (horizontal) position
-        CLC         ; make sure the carry flag is clear
-        ADC #$01    ; A = A + 1
-        STA $0207   ; save sprite X (horizontal) position
-
-
-        LDA $020b   ; load sprite X (horizontal) position
-        CLC         ; make sure the carry flag is clear
-        ADC #$01    ; A = A + 1
-        STA $020b   ; save sprite X (horizontal) position
-
-        LDA $020f   ; load sprite X (horizontal) position
-        CLC         ; make sure the carry flag is clear
-        ADC #$01    ; A = A + 1
-        STA $020f   ; save sprite X (horizontal) position
-        JMP nopress
+        LDX PaddlePosX
+        INX
+        STX PaddlePosX
+        RTS
     MovePaddlePiecesLeft:
-        LDA $0203   ; load sprite X (horizontal) position
-        SEC         ; make sure the carry flag is set
-        SBC #$01    ; A = A - 1
-        STA $0203   ; save sprite X (horizontal) position
+        LDX PaddlePosX
+        DEX
+        STX PaddlePosX
+        RTS
 
-
-        LDA $0207   ; load sprite X (horizontal) position
-        SEC         ; make sure the carry flag is set
-        SBC #$01    ; A = A - 1
-        STA $0207   ; save sprite X (horizontal) position
-
-
-        LDA $020b   ; load sprite X (horizontal) position
-        SEC        ; make sure the carry flag is set
-        SBC #$01    ; A = A - 1
-        STA $020b   ; save sprite X (horizontal) position
-
-        LDA $020f   ; load sprite X (horizontal) position
-        SEC         ; make sure the carry flag is set
-        SBC #$01    ; A = A - 1
-        STA $020f   ; save sprite X (horizontal) position
-        JMP nopress
-    nopress:
-    RTS
+.proc disable_all_oam_entries
+    ldx #0
+    lda #$FF
+    loop:
+        sta SHADOW_OAM + OAM_Y_POS, x
+        inx
+        inx
+        inx
+        inx
+        bne loop
+        rts
+.endproc
 .segment "VECTORS"
     .word nmi, reset, 0
 .segment "CHARS"
