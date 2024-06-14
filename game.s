@@ -1,3 +1,18 @@
+.segment "CONSTANTS"
+
+    SHADOW_OAM := $0200 ; this is the address of the shadow OEM. or, the local copy of the PPU sprite table before its copied to the PPU
+    ; OAM sprite attributes 
+    OAM_Y_POS = 0 ; these 4 symbols let me use a sprites memory address plus these to get the correct sprite attribute
+    OAM_TILE = 1
+    OAM_ATTRIBUTES = 2
+    OAM_X_POS = 3
+    ONE_SPRITE = 4 ; this is the size of 1 whole sprite. to move to next sprite (at the same attribute!) add this.
+
+    ; sprite specific CONSTS
+
+    ; PADDLE specific CONSTS
+
+    PADDLE_HEIGHT = $D0
 .segment "HEADER"
     .byte 'N','E','S',$1A ; magic INES number, standard and required.
     .byte $02 ; number of 16KB prg rom bank's
@@ -9,6 +24,8 @@
     ; prg - program. CHR - charecter (sprite related).
 .segment "ZEROPAGE"
 buttons: .RES 1
+PaddlePosX: .RES 1 ; these signify the leftmost paddle piece
+PaddlePosY: .RES 1 ; (const)
 .segment "STARTUP"
     reset:
 
@@ -97,7 +114,7 @@ buttons: .RES 1
 PALETTEDATA:
 	.byte $00, $0F, $01, $10, 	$00, $0A, $15, $01, 	$00, $29, $28, $27, 	$00, $34, $24, $14 	;background palettes
 	.byte $31, $0F, $15, $30, 	$00, $0F, $11, $30, 	$00, $0F, $30, $27, 	$00, $3C, $2C, $1C 	;sprite palettes
-    SPRITEDATA:
+SPRITEDATA:
     ;Y, SPRITE NUM, attributes, X
 	.byte $D0, $13, %01000000, $40
 	.byte $D0, $12, $00, $48
@@ -130,8 +147,9 @@ MovePaddle:
     BEQ  MovePaddlePiecesRight
     CPX #%00000010
     BEQ  MovePaddlePiecesLeft
-    BRA nopress
+    JMP nopress
     MovePaddlePiecesRight:
+    
         LDA $0203   ; load sprite X (horizontal) position
         CLC         ; make sure the carry flag is clear
         ADC #$01    ; A = A + 1
@@ -153,30 +171,30 @@ MovePaddle:
         CLC         ; make sure the carry flag is clear
         ADC #$01    ; A = A + 1
         STA $020f   ; save sprite X (horizontal) position
-        BRA nopress
+        JMP nopress
     MovePaddlePiecesLeft:
         LDA $0203   ; load sprite X (horizontal) position
-        CLC         ; make sure the carry flag is clear
-        SBC #$01    ; A = A + 1
+        SEC         ; make sure the carry flag is set
+        SBC #$01    ; A = A - 1
         STA $0203   ; save sprite X (horizontal) position
 
 
         LDA $0207   ; load sprite X (horizontal) position
-        CLC         ; make sure the carry flag is clear
-        SBC #$01    ; A = A + 1
+        SEC         ; make sure the carry flag is set
+        SBC #$01    ; A = A - 1
         STA $0207   ; save sprite X (horizontal) position
 
 
         LDA $020b   ; load sprite X (horizontal) position
-        CLC         ; make sure the carry flag is clear
-        SBC #$01    ; A = A + 1
+        SEC        ; make sure the carry flag is set
+        SBC #$01    ; A = A - 1
         STA $020b   ; save sprite X (horizontal) position
 
         LDA $020f   ; load sprite X (horizontal) position
-        CLC         ; make sure the carry flag is clear
-        SBC #$01    ; A = A + 1
+        SEC         ; make sure the carry flag is set
+        SBC #$01    ; A = A - 1
         STA $020f   ; save sprite X (horizontal) position
-        BRA nopress
+        JMP nopress
     nopress:
     RTS
 .segment "VECTORS"
