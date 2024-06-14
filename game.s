@@ -83,7 +83,7 @@ frame_ready: .RES 1
             INX 
             CPX #$20
             BNE LOADPALETTES
-        LDX #$F0
+        LDX #128
         STX PaddlePosX
         CLI ; enable interrupts
         LDA #%10010000 ; generate NMI when Vblank happens. second bit tells PPU to use the second half of the sprites for background.
@@ -111,12 +111,12 @@ nmi:
 PALETTEDATA:
 	.byte $00, $0F, $01, $10, 	$00, $0A, $15, $01, 	$00, $29, $28, $27, 	$00, $34, $24, $14 	;background palettes
 	.byte $31, $0F, $15, $30, 	$00, $0F, $11, $30, 	$00, $0F, $30, $27, 	$00, $3C, $2C, $1C 	;sprite palettes
-PdadleDATA:
+PaddleDATA:
     ;Y, SPRITE NUM, attributes, X
-	.byte PADDLE_HEIGHT, $13, %01000000, PaddlePosX
-	.byte PADDLE_HEIGHT, $12, $00, PaddlePosX + $8
-	.byte PADDLE_HEIGHT, $12, $00, PaddlePosX + $10
-	.byte PADDLE_HEIGHT, $13, $00, PaddlePosX + $18
+	.byte $00, $13, %01000000, $00
+	.byte $00, $12, $00, $08 
+	.byte $00, $12, $00, $10 
+	.byte $00, $13, $00, $18
 
 ;--------------subroutines--------------;
 gameCode:
@@ -128,9 +128,26 @@ gameCode:
     JSR disable_all_oam_entries
     JSR MovePaddle
     LOADSPRITES:
-        LDA PdadleDATA, x ; loads palletes to memory. $2007 increments automatically.
+        LDA #PADDLE_HEIGHT
+        CLC
+        ADC PaddleDATA, x
         STA $0200, x
         INX 
+
+        LDA PaddleDATA, x 
+        STA $0200, x
+        INX
+
+        LDA PaddleDATA, x 
+        STA $0200, x
+        INX 
+
+        LDA PaddlePosX
+        CLC
+        ADC PaddleDATA, x
+        STA $0200, x
+        INX 
+        
         CPX #$10 ; 4 sprites times 4 bytes per sprite
         BNE LOADSPRITES
     LDA #$00
@@ -163,15 +180,10 @@ MovePaddle:
     BEQ  MovePaddlePiecesLeft
     RTS
     MovePaddlePiecesRight:
-    
-        LDX PaddlePosX
-        INX
-        STX PaddlePosX
+        INC PaddlePosX
         RTS
     MovePaddlePiecesLeft:
-        LDX PaddlePosX
-        DEX
-        STX PaddlePosX
+        DEC PaddlePosX
         RTS
 
 .proc disable_all_oam_entries
