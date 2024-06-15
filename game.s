@@ -238,8 +238,8 @@ WaitForVblank:
     BPL WaitForVblank
     RTS
 BallCollisionTest:
+    LDA ballProperties
     horizontal:
-        LDA ballProperties
         LDX ballPosY
         upCollisionTest:
             CPX #MAX_Y
@@ -260,9 +260,29 @@ BallCollisionTest:
             STA ballProperties
         rightCollisionTest:
             CPX #MIN_X
-            BNE exit
+            BNE paddle
             EOR #HORIZONTAL_BALL_MASK
             STA ballProperties
+    paddle:
+        LDA ballPosY
+        CLC ; clear carry flag, a must have for addition.
+        ADC #PADDLE_WIDTH
+        CMP #PADDLE_HEIGHT
+        BNE exit ; test if its paddle height.
+
+
+        LDA ballPosX
+        CMP PaddlePosX
+        BCC exit ; if its x value is less then the paddles, exit
+
+        SEC ; set carry flag, a must have for subtraction. works reverse from addition for some reason
+        SBC #PADDLE_OFFSET
+        CMP PaddlePosX
+        BCS exit ; if its x value is greater then then the paddles plus offset, exit
+
+        LDA ballProperties
+        EOR #VERTICAL_BALL_MASK
+        STA ballProperties
     exit:
         RTS
 
@@ -272,7 +292,7 @@ MoveBall:
     LDA #MOVING_BALL_MASK
     BIT ballProperties ; if it is 0, dont move ball
     BEQ Return
-
+    
     HorizontalMove:
         LDA #HORIZONTAL_BALL_MASK
         BIT ballProperties ; if it is 0, move right. else move left
