@@ -9,15 +9,16 @@
         ONE_SPRITE = 4 ; this is the size of 1 whole sprite. to move to next sprite (at the same attribute!) add this.
 
     ; screen limits
-        MAX_Y = 0 ; temp value
-        MIN_Y = 0
+        MAX_Y = $E1 ; temp value
+        MIN_Y = $0
         MAX_X = $F8
-        MIN_X = 0
+        MIN_X = $0
 
     ; actor specific CONSTS
 
         ; PADDLE specific CONSTS
             PADDLE_HEIGHT = $D0
+            PADDLE_WIDTH = $04
             PADDLE_OFFSET = $18 ; for detecting the bounderies. basically just 8 * 3 pixels.
 
         ; BALL specific CONSTS
@@ -118,7 +119,7 @@
         forever:
             JSR gameCode
             jmp forever
-            jmp nmi
+            
 ;-----------------------------------;
 nmi:
     pha
@@ -160,6 +161,8 @@ gameCode:
     JSR disable_all_oam_entries
     JSR MovePaddle
     JSR drawPaddle
+
+    JSR BallCollisionTest
     JSR MoveBall
     JSR drawBall
         
@@ -234,6 +237,37 @@ WaitForVblank:
     BIT $2002
     BPL WaitForVblank
     RTS
+BallCollisionTest:
+    horizontal:
+        LDA ballProperties
+        LDX ballPosY
+        upCollisionTest:
+            CPX #MAX_Y
+            BNE downCollisionTest
+            EOR #VERTICAL_BALL_MASK
+            STA ballProperties
+        downCollisionTest:
+            CPX #MIN_Y
+            BNE vertical
+            EOR #VERTICAL_BALL_MASK
+            STA ballProperties
+    vertical:
+        LDX ballPosX
+        leftCollisionTest:
+            CPX #MAX_X
+            BNE rightCollisionTest
+            EOR #HORIZONTAL_BALL_MASK
+            STA ballProperties
+        rightCollisionTest:
+            CPX #MIN_X
+            BNE exit
+            EOR #HORIZONTAL_BALL_MASK
+            STA ballProperties
+    exit:
+        RTS
+
+
+
 MoveBall:
     LDA #MOVING_BALL_MASK
     BIT ballProperties ; if it is 0, dont move ball
@@ -265,6 +299,7 @@ MoveBall:
             JMP Return
     Return:
         RTS
+
 
 
 MovePaddle:
