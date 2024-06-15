@@ -2,17 +2,32 @@
 
     SHADOW_OAM := $0200 ; this is the address of the shadow OEM. or, the local copy of the PPU sprite table before its copied to the PPU
     ; OAM sprite attributes 
-    OAM_Y_POS = 0 ; these 4 symbols let me use a sprites memory address plus these to get the correct sprite attribute
-    OAM_TILE = 1
-    OAM_ATTRIBUTES = 2
-    OAM_X_POS = 3
-    ONE_SPRITE = 4 ; this is the size of 1 whole sprite. to move to next sprite (at the same attribute!) add this.
+        OAM_Y_POS = 0 ; these 4 symbols let me use a sprites memory address plus these to get the correct sprite attribute
+        OAM_TILE = 1
+        OAM_ATTRIBUTES = 2
+        OAM_X_POS = 3
+        ONE_SPRITE = 4 ; this is the size of 1 whole sprite. to move to next sprite (at the same attribute!) add this.
+
+    ; screen limits
+        MAX_Y = 0 ; temp value
+        MIN_Y = 0
+        MAX_X = $F8
+        MIN_X = 0
 
     ; actor specific CONSTS
 
-    ; PADDLE specific CONSTS
+        ; PADDLE specific CONSTS
+            PADDLE_HEIGHT = $D0
+            PADDLE_OFFSET = $18 ; for detecting the bounderies. basically just 8 * 3 pixels.
 
-    PADDLE_HEIGHT = $D0
+        ; BALL specific CONSTS
+        
+            ; ball properties masks (for AND)
+                HORIZONTAL_BALL_MASK = %00000100 ; left right
+                VERTICAL_BALL_MASK = %00000010; up down
+                MOVING_BALL_MASK =  %00000001; is ball moving
+
+
 .segment "HEADER"
     .byte 'N','E','S',$1A ; magic INES number, standard and required.
     .byte $02 ; number of 16KB prg rom bank's
@@ -23,10 +38,15 @@
     .byte $00 ; NTSC format
     ; prg - program. CHR - charecter (sprite related).
 .segment "ZEROPAGE"
-buttons: .RES 1
-PaddlePosX: .RES 1 ; these signify the leftmost paddle piece
-frame_ready: .RES 1
+    buttons: .RES 1
+    frame_ready: .RES 1
 
+    PaddlePosX: .RES 1 ; these signify the leftmost paddle piece
+
+    ballPosX: .RES 1
+    ballPosY: .RES 1
+    ballProperties: .RES 1 ; last bit signifies if it is moving. if last bit is 0, no move. next bit signifies up/down. 1 is up, 0 is down. next bit signifies left/right. 1 is left, 0 is right. rest are unused as of now.
+    ; so a ball moving up and right would be equal to 00000101
 .segment "STARTUP"
     reset:
 
@@ -86,6 +106,10 @@ frame_ready: .RES 1
             BNE LOADPALETTES
         LDX #128
         STX PaddlePosX
+        STX ballPosX
+        STX ballPosY
+        LDX #%00000001
+        STX ballProperties
         CLI ; enable interrupts
         LDA #%10010000 ; generate NMI when Vblank happens. second bit tells PPU to use the second half of the sprites for background.
         STA $2000 
@@ -94,6 +118,7 @@ frame_ready: .RES 1
         forever:
             JSR gameCode
             jmp forever
+            jmp nmi
 ;-----------------------------------;
 nmi:
     pha
@@ -118,7 +143,13 @@ PaddleDATA:
 	.byte $00, $12, $00, $08 
 	.byte $00, $12, $00, $10 
 	.byte $00, $13, $00, $18
-
+BallDATA:
+    ;Y, SPRITE NUM, attributes, X
+	.byte $00, $21, $00, $00
+	.byte $FF, $FF, $00, $FF 
+	.byte $FF, $FF, $00, $FF 
+	.byte $FF, $FF, $00, $FF
+	
 ;--------------subroutines--------------;
 gameCode:
     ; checks if NMI has run yet
@@ -128,9 +159,16 @@ gameCode:
 
     JSR disable_all_oam_entries
     JSR MovePaddle
-    
+    JSR drawPaddle
+    JSR MoveBall
+    JSR drawBall
+        
+    LDA #$00
+    STA frame_ready
+    RTS
+drawPaddle:
     LDX #$00
-    LOADSPRITES:
+    drawPaddleLoop:
         LDA #PADDLE_HEIGHT
         CLC
         ADC PaddleDATA, x
@@ -152,9 +190,29 @@ gameCode:
         INX 
 
         CPX #$10 ; 4 sprites times 4 bytes per sprite
-        BNE LOADSPRITES
-    LDA #$00
-    STA frame_ready
+        BNE drawPaddleLoop
+    RTS
+drawBall:
+    LDX #$00
+    drawBallLoop:
+        LDA ballPosY
+        STA $0210, x
+        INX 
+
+        LDA BallDATA, x 
+        STA $0210, x
+        INX
+
+        LDA BallDATA, x 
+        STA $0210, x
+        INX 
+
+        LDA ballPosX
+        STA $0210, x
+        INX 
+
+        CPX #$10 ; 4 sprites times 4 bytes per sprite
+        BNE drawBallLoop
     RTS
 ReadController:
     LDA #$01
@@ -176,6 +234,39 @@ WaitForVblank:
     BIT $2002
     BPL WaitForVblank
     RTS
+MoveBall:
+    LDA #MOVING_BALL_MASK
+    BIT ballProperties ; if it is 0, dont move ball
+    BEQ Return
+
+    HorizontalMove:
+        LDA #HORIZONTAL_BALL_MASK
+        BIT ballProperties ; if it is 0, move right. else move left
+        BEQ MoveBallRight
+        BNE MoveBallLeft
+    VerticalMove:
+        LDA #VERTICAL_BALL_MASK
+        BIT ballProperties ; if it is 0, move down. else move up
+        BEQ MoveBallDown
+        BNE MoveBallUp
+
+    ballMoveSections:
+        MoveBallLeft:
+            INC ballPosX
+            JMP VerticalMove
+        MoveBallRight:
+            DEC ballPosX
+            JMP VerticalMove
+        MoveBallUp:
+            INC ballPosY
+            JMP Return
+        MoveBallDown:
+            DEC ballPosY
+            JMP Return
+    Return:
+        RTS
+
+
 MovePaddle:
     JSR ReadController
     LDX buttons ; load buttons into register x
@@ -185,13 +276,15 @@ MovePaddle:
     BEQ  MovePaddlePiecesLeft
     RTS
     MovePaddlePiecesRight:
-        LDA #$E0
+        LDA #MAX_X
+        SEC ; set carry flag, a must have for subtraction. works reverse from addition for some reason
+        SBC #PADDLE_OFFSET
         CMP PaddlePosX
         BEQ OutOfBounds
         INC PaddlePosX
         RTS
     MovePaddlePiecesLeft:
-        LDA #$00
+        LDA #MIN_X
         CMP PaddlePosX
         BEQ OutOfBounds
         DEC PaddlePosX
