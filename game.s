@@ -8,7 +8,7 @@
     OAM_X_POS = 3
     ONE_SPRITE = 4 ; this is the size of 1 whole sprite. to move to next sprite (at the same attribute!) add this.
 
-    ; sprite specific CONSTS
+    ; actor specific CONSTS
 
     ; PADDLE specific CONSTS
 
@@ -26,6 +26,7 @@
 buttons: .RES 1
 PaddlePosX: .RES 1 ; these signify the leftmost paddle piece
 frame_ready: .RES 1
+
 .segment "STARTUP"
     reset:
 
@@ -127,6 +128,8 @@ gameCode:
 
     JSR disable_all_oam_entries
     JSR MovePaddle
+    
+    LDX #$00
     LOADSPRITES:
         LDA #PADDLE_HEIGHT
         CLC
@@ -147,7 +150,7 @@ gameCode:
         ADC PaddleDATA, x
         STA $0200, x
         INX 
-        
+
         CPX #$10 ; 4 sprites times 4 bytes per sprite
         BNE LOADSPRITES
     LDA #$00
@@ -164,7 +167,9 @@ ReadController:
         LSR A           ; bit0 -> Carry
         ROL buttons     ; bit0 <- Carry
         DEX
+        
         BNE ReadControllerLoop
+        LDX buttons
         RTS
 
 WaitForVblank:
@@ -180,10 +185,18 @@ MovePaddle:
     BEQ  MovePaddlePiecesLeft
     RTS
     MovePaddlePiecesRight:
+        LDA #$E0
+        CMP PaddlePosX
+        BEQ OutOfBounds
         INC PaddlePosX
         RTS
     MovePaddlePiecesLeft:
+        LDA #$00
+        CMP PaddlePosX
+        BEQ OutOfBounds
         DEC PaddlePosX
+        RTS
+    OutOfBounds:
         RTS
 
 .proc disable_all_oam_entries
