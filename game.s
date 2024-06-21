@@ -1,13 +1,13 @@
 .segment "CONSTANTS"
 
-    SHADOW_OAM := $0200 ; this is the address of the shadow OEM. or, the local copy of the PPU sprite table before its copied to the PPU
+    
     ; OAM sprite attributes 
         OAM_Y_POS = 0 ; these 4 symbols let me use a sprites memory address plus these to get the correct sprite attribute
         OAM_TILE = 1
         OAM_ATTRIBUTES = 2
         OAM_X_POS = 3
         ONE_SPRITE = 4 ; this is the size of 1 whole sprite. to move to next sprite (at the same attribute!) add this.
-
+        SHADOW_OAM := $0200 ; this is the address of the shadow OEM. or, the local copy of the PPU sprite table before its copied to the PPU
     ; screen limits
         MAX_Y = $E1 ; temp value
         MIN_Y = $0
@@ -27,8 +27,14 @@
                 HORIZONTAL_BALL_MASK = %00000100 ; left right
                 VERTICAL_BALL_MASK = %00000010; up down
                 MOVING_BALL_MASK =  %00000001; is ball moving
-
-
+    ; game states
+        TITLE_SCREEN = $FF
+        GAME_OVER = $FE ; will display the game over screen for a certein length. then move to startup
+        STARTUP = $FD ; will do stuff like clearing memory for one frame. then, will move to title screen
+        WIN_SCREEN = $FC ; will display the win screen for a certein length. then move to startup
+        ; everything else is levels. anything undefined will likely be chnaged to title screen.
+        ; start level is always 00.
+        LAST_LEVEL = $00 ; last level i am set up to run. 
 .segment "HEADER"
     .byte 'N','E','S',$1A ; magic INES number, standard and required.
     .byte $02 ; number of 16KB prg rom bank's
@@ -48,6 +54,8 @@
     ballPosY: .RES 1
     ballProperties: .RES 1 ; last bit signifies if it is moving. if last bit is 0, no move. next bit signifies up/down. 1 is up, 0 is down. next bit signifies left/right. 1 is left, 0 is right. rest are unused as of now.
     ; so a ball moving up and right would be equal to 00000101
+
+    gamestate: .RES 1 ; as declared in CONSTANTS
 .segment "STARTUP"
     reset:
 
@@ -247,10 +255,7 @@ BallCollisionTest:
             EOR #VERTICAL_BALL_MASK
             STA ballProperties
         downCollisionTest:
-            CPX #MIN_Y
-            BNE vertical
-            EOR #VERTICAL_BALL_MASK
-            STA ballProperties
+            ; lose condition
     vertical:
         LDX ballPosX
         leftCollisionTest:
