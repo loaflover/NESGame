@@ -41,3 +41,20 @@ then, choose your rom file (should be called game.nes), open it in your emulator
 ## how to play
 
 playing this game is simple. as of now, you use the right asnd left buttons on the controller (mapped differently per emulator, but safe to assume default mapping is left and right keys), and th paddle moves accordingly. then, you just hit the ball and watch it bounce. for now, thats it (more to come soon!)
+
+
+# credits
+while most of this code is written by me exclusively, i have some special thanks to give
+### NES development server
+thanks to the members of this awsome discord! all their help is incredibly appreceated. 
+link: https://discord.gg/Mf3aYvrg
+### Nerdy nights
+thanks to the insane nerdy nights for offering an insane tutorial, specifically the contoller handler, which is the only part of my code not written by me
+link: https://nerdy-nights.nes.science/
+### NESHacker
+thanks to the NESHacker on youtube, for simplifying many assembly and NES concepts.
+link: https://www.youtube.com/watch?v=R6KJjbbQRFk
+### friends
+thanks to my awsome friends, for testing the game and reading my assembly code (even though most of them know little to no assembly)
+### you 
+but most of all, thanks to you. any user that plays, tests and comments on this project is greatly appreceated. this project growning is directly related to reviews, if from friends (currently my only reviews), or from anyone stumbling upon this project. so, thanks (:
