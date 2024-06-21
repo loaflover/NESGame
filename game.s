@@ -272,11 +272,15 @@ BallCollisionTest:
 
 
         LDA ballPosX
+        CLC 
+        ADC #4 ; since sprites are drawn from the top left pixel, and the ball is dead center, i need to add the offset.
         CMP PaddlePosX
         BCC exit ; if its x value is less then the paddles, exit
 
         SEC ; set carry flag, a must have for subtraction. works reverse from addition for some reason
         SBC #PADDLE_OFFSET
+        SEC 
+        SBC #8 ; since sprites are drawn from the top left pixel, and the ball is dead center, i need to subtract the offset ( and the 4 from the other calculation).
         CMP PaddlePosX
         BCS exit ; if its x value is greater then then the paddles plus offset, exit
 
