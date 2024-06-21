@@ -9,8 +9,8 @@
         ONE_SPRITE = 4 ; this is the size of 1 whole sprite. to move to next sprite (at the same attribute!) add this.
         SHADOW_OAM := $0200 ; this is the address of the shadow OEM. or, the local copy of the PPU sprite table before its copied to the PPU
     ; screen limits
-        MAX_Y = $E1 ; temp value
-        MIN_Y = $0
+        MAX_Y = 0 ; max y seems swapped with min y but no, screen just loops early (top of screen is not FF but instead 0)
+        MIN_Y = $E1
         MAX_X = $F8
         MIN_X = $0
 
