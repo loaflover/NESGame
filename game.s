@@ -32,6 +32,7 @@
         GAME_OVER = $FE ; will display the game over screen for a certein length. then move to startup
         STARTUP = $FD ; will do stuff like clearing memory for one frame. then, will move to title screen
         WIN_SCREEN = $FC ; will display the win screen for a certein length. then move to startup
+        GOAL_SCREEN = $FC ; some levels might have other goals. this loads before the level starts. will display for a certein length. then move to main level code
         ; everything else is levels. anything undefined will likely be chnaged to title screen.
         ; start level is always 00.
         LAST_LEVEL = $00 ; last level i am set up to run. 
@@ -44,6 +45,13 @@
     .byte $00 ; prg ram (none here)
     .byte $00 ; NTSC format
     ; prg - program. CHR - charecter (sprite related).
+
+    .import game_over_nametable
+    .import start_game_nametable
+    .import PALETTEDATA
+    .import PaddleDATA
+    .import BallDATA
+
 .segment "ZEROPAGE"
     buttons: .RES 1
     frame_ready: .RES 1
@@ -143,22 +151,7 @@ nmi:
     pla 
     rti
 ;-----------------------------------;
-PALETTEDATA:
-	.byte $00, $0F, $01, $10, 	$00, $0A, $15, $01, 	$00, $29, $28, $27, 	$00, $34, $24, $14 	;background palettes
-	.byte $31, $0F, $15, $30, 	$00, $0F, $11, $30, 	$00, $0F, $30, $27, 	$00, $3C, $2C, $1C 	;sprite palettes
-PaddleDATA:
-    ;Y, SPRITE NUM, attributes, X
-	.byte $00, $13, %01000000, $00
-	.byte $00, $12, $00, $08 
-	.byte $00, $12, $00, $10 
-	.byte $00, $13, $00, $18
-BallDATA:
-    ;Y, SPRITE NUM, attributes, X
-	.byte $00, $21, $00, $00
-	.byte $FF, $FF, $00, $FF 
-	.byte $FF, $FF, $00, $FF 
-	.byte $FF, $FF, $00, $FF
-	
+
 ;--------------subroutines--------------;
 gameCode:
     ; checks if NMI has run yet
