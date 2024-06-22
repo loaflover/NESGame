@@ -46,7 +46,7 @@ playing this game is simple. as of now, you use the right asnd left buttons on t
 # credits
 while most of this code is written by me exclusively, i have some special thanks to give
 ### NES development server
-thanks to the members of this awsome discord! all their help is incredibly appreceated. 
+thanks to the members of this awsome discord! all their help is incredibly appreceated. they also have a wiki, where i took my startup code (to clarify - i wrote the startup code myself, but due to having better comments and working with edge cases, i used theirs as reccomended by the server members)
 link: https://discord.gg/Mf3aYvrg
 ### Nerdy nights
 thanks to the insane nerdy nights for offering an insane tutorial, specifically the contoller handler, which is the only part of my code not written by me
