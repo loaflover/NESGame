@@ -14,35 +14,55 @@
 
 .segment "STARTUP"
     reset:
+        sei        ; ignore IRQs
+        cld        ; disable decimal mode
+        ldx #$40
+        stx $4017  ; disable APU frame IRQ
+        ldx #$ff
+        txs        ; Set up stack
+        inx        ; now X = 0
+        stx $2000  ; disable NMI
+        stx $2001  ; disable rendering
+        stx $4010  ; disable DMC IRQs
 
+        ; Optional (omitted):
+        ; Set up mapper and jmp to further init code here.
 
-        ;has to be outside of a subroutine as return address is saved in stack
-        LDX #$FF ; initialize stack
-        TXS 
-        JSR disable_for_startup
-        JSR WaitForVblank
-        TXA ; x is 0. this sets a to zero aswell
-        clearmem:
-            STA $0000, x ; stores a in 0[i]00 + x, clearing each page.
-            STA $0100, x 
-            STA $0300, x 
-            STA $0400, x 
-            STA $0500, x 
-            STA $0600, x 
-            STA $0700, x 
-                LDA #$FF
-                STA $0200, x ; this page is the sprite page, needs to be set to FF
-                LDA #$00
-            inx 
-            CPX #$00 ; compares x to 0. if x reached its maximum (FF), adding 1 would make it 0.
-            BNE clearmem ; if x was not 0, jump back.
-        JSR WaitForVblank
+        ; The vblank flag is in an unknown state after reset,
+        ; so it is cleared here to make sure that @vblankwait1
+        ; does not exit immediately.
+        bit $2002
 
+        ; First of two waits for vertical blank to make sure that the
+        ; PPU has stabilized
+    @vblankwait1:  
+        bit $2002
+        bpl @vblankwait1
 
-        JSR startcode
-        forever:
-            JSR gameCode
-            jmp forever
+        ; We now have about 30,000 cycles to burn before the PPU stabilizes.
+        ; One thing we can do with this time is put RAM in a known state.
+        ; Here we fill it with $00, which matches what (say) a C compiler
+        ; expects for BSS.  Conveniently, X is still 0.
+        txa
+    @clrmem:
+        sta $000,x
+        sta $100,x
+        sta $200,x
+        sta $300,x
+        sta $400,x
+        sta $500,x
+        sta $600,x
+        sta $700,x
+        inx
+        bne @clrmem
+
+        ; Other things you can do between vblank waits are set up audio
+        ; or set up other mapper registers.
+    
+    @vblankwait2:
+        bit $2002
+        bpl @vblankwait2
+    jmp game_loop
             
 ;-----------------------------------;
 nmi:
@@ -61,61 +81,9 @@ nmi:
 ;-----------------------------------;
 
 ;--------------subroutines--------------;
-disable_for_startup:
-    SEI ;disable interrupts
-    CLD ; turn off decimal mode
-
-    LDX #%1000000 ; disable sound IRQ
-    STX $4017
-
-    LDX #$00 ; disable PCM
-    STX $4010
-
-    
-
-    LDX #$00 ; clear PPU registers
-    STX $2000
-    STX $2001
-
-    ; all this code does is disable things for startup. will be enabled later down the line.
-    RTS
-
-
-startcode:
-        LDA #$02 ; copy sprites to the right address
-        STA $4014
-        NOP ; wait for copy to complete
-
-
-
-        LDA #$3F ; this whole section tells the cpu to write to memory address $3f00
-        STA $2006
-        LDA #$00
-        STA $2006
-
-        LDX #$00
-        LOADPALETTES:
-            LDA Palettes, x ; loads palletes to memory. $2007 increments automatically.
-            STA $2007
-            INX 
-            CPX #$20
-            BNE LOADPALETTES
-        LDX #128
-        STX PaddlePosX
-        STX ballPosX
-        STX ballPosY
-        LDX #%00000001
-        STX ballProperties
-        CLI ; enable interrupts
-        LDA #%10010000 ; generate NMI when Vblank happens. second bit tells PPU to use the second half of the sprites for background.
-        STA $2000 
-        LDA #%00011110 ; show sprites and background
-        STA $2001
-        RTS
-
-
-
-
+game_loop:
+    JSR gameCode
+    jmp game_loop
 gameCode:
     ; checks if NMI has run yet
     :
