@@ -1,27 +1,24 @@
-.export game_over_nametable
-.export start_game_nametable
-.export PALETTEDATA
-.export PaddleDATA
-.export BallDATA
+.export GameOverBG, WinBG, Palettes, PaddleSprites, BallSprites
 
 
-PALETTEDATA:
+
+Palettes:
 	.byte $00, $0F, $01, $10, 	$00, $0A, $15, $01, 	$00, $29, $28, $27, 	$00, $34, $24, $14 	;background palettes
 	.byte $31, $0F, $15, $30, 	$00, $0F, $11, $30, 	$00, $0F, $30, $27, 	$00, $3C, $2C, $1C 	;sprite palettes
-PaddleDATA:
+PaddleSprites:
     ;Y, SPRITE NUM, attributes, X
 	.byte $00, $13, %01000000, $00
 	.byte $00, $12, $00, $08 
 	.byte $00, $12, $00, $10 
 	.byte $00, $13, $00, $18
-BallDATA:
+BallSprites:
     ;Y, SPRITE NUM, attributes, X
 	.byte $00, $21, $00, $00
 	.byte $FF, $FF, $00, $FF 
 	.byte $FF, $FF, $00, $FF 
 	.byte $FF, $FF, $00, $FF
 	
-game_over_nametable:
+GameOverBG:
 	.byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
 	.byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
 	.byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
@@ -87,7 +84,7 @@ game_over_nametable:
 	.byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
 	.byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
 
-start_game_nametable:
+WinBG:
 	.byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
 	.byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
 	.byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00

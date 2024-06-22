@@ -1,4 +1,4 @@
-.import "Globals.s" ; this whole thing is just done so globals can be seen everywhere.
+.include "Globals.asm" ; this whole thing is just done so globals can be seen everywhere.
 .segment "HEADER"
     .byte 'N','E','S',$1A ; magic INES number, standard and required.
     .byte $02 ; number of 16KB prg rom bank's
@@ -9,11 +9,8 @@
     .byte $00 ; NTSC format
     ; prg - program. CHR - charecter (sprite related).
 
-    .import game_over_nametable
-    .import start_game_nametable
-    .import PALETTEDATA
-    .import PaddleDATA
-    .import BallDATA
+    .import GameOverBG, WinBG, Palettes, PaddleSprites, BallSprites
+
 
 .segment "ZEROPAGE"
     buttons: .RES 1
@@ -79,7 +76,7 @@
 
         LDX #$00
         LOADPALETTES:
-            LDA PALETTEDATA, x ; loads palletes to memory. $2007 increments automatically.
+            LDA Palettes, x ; loads palletes to memory. $2007 increments automatically.
             STA $2007
             INX 
             CPX #$20
@@ -138,21 +135,21 @@ drawPaddle:
     drawPaddleLoop:
         LDA #PADDLE_HEIGHT
         CLC
-        ADC PaddleDATA, x
+        ADC PaddleSprites, x
         STA $0200, x
         INX 
 
-        LDA PaddleDATA, x 
+        LDA PaddleSprites, x 
         STA $0200, x
         INX
 
-        LDA PaddleDATA, x 
+        LDA PaddleSprites, x 
         STA $0200, x
         INX 
 
         LDA PaddlePosX
         CLC
-        ADC PaddleDATA, x
+        ADC PaddleSprites, x
         STA $0200, x
         INX 
 
@@ -166,11 +163,11 @@ drawBall:
         STA $0210, x
         INX 
 
-        LDA BallDATA, x 
+        LDA BallSprites, x 
         STA $0210, x
         INX
 
-        LDA BallDATA, x 
+        LDA BallSprites, x 
         STA $0210, x
         INX 
 
