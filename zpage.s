@@ -1,4 +1,4 @@
-.exportzp buttons,frame_ready,PaddlePosX,ballPosX,ballPosY,ballProperties,gamestate
+.exportzp buttons,frame_ready,PaddlePosX,ballPosX,ballPosY,ballProperties,gamestate, SubroutineInput
 .segment "ZEROPAGE"
     buttons: .RES 1
     frame_ready: .RES 1
@@ -11,3 +11,4 @@
     ; so a ball moving up and right would be equal to 00000101
 
     gamestate: .RES 1 ; as declared in CONSTANTS
+    SubroutineInput: .RES 2
