@@ -16,13 +16,36 @@
     reset:
 
 
-        ;has to be outside of a subroutine as return address is saved in stack
+
         LDX #$FF ; initialize stack
         TXS 
-        JSR disable_for_startup
-        JSR WaitForVblank
-        TXA ; x is 0. this sets a to zero aswell
-        clearmem:
+
+        SEI ;disable interrupts
+        CLD ; turn off decimal mode
+
+        LDX #%1000000 ; disable sound IRQ
+        STX $4017
+
+        LDX #$00 ; disable PCM
+        STX $4010
+
+        
+
+        LDX #$00 ; clear PPU registers
+        STX $2000
+        STX $2001
+
+
+        @vblankwait1:  
+            bit $2002
+            bpl @vblankwait1
+
+            ; We now have about 30,000 cycles to burn before the PPU stabilizes.
+            ; One thing we can do with this time is put RAM in a known state.
+            ; Here we fill it with $00, which matches what (say) a C compiler
+            ; expects for BSS.  Conveniently, X is still 0.
+            txa
+        @clrmem:
             STA $0000, x ; stores a in 0[i]00 + x, clearing each page.
             STA $0100, x 
             STA $0300, x 
@@ -34,54 +57,16 @@
                 STA $0200, x ; this page is the sprite page, needs to be set to FF
                 LDA #$00
             inx 
-            CPX #$00 ; compares x to 0. if x reached its maximum (FF), adding 1 would make it 0.
-            BNE clearmem ; if x was not 0, jump back.
-        JSR WaitForVblank
+            bne @clrmem
+
+            ; Other things you can do between vblank waits are set up audio
+            ; or set up other mapper registers.
+        
+        @vblankwait2:
+            bit $2002
+            bpl @vblankwait2
 
 
-        JSR startcode
-        forever:
-            JSR gameCode
-            jmp forever
-            
-;-----------------------------------;
-nmi:
-    pha
-    LDA frame_ready
-    BNE PpuDone
-    LDA #$02 ; load sprite range
-    STA $4014
-    ; Mark that we've handled the start of this frame already.
-    LDA #$01
-    STA frame_ready
-
-    PpuDone:
-    pla 
-    rti
-;-----------------------------------;
-
-;--------------subroutines--------------;
-disable_for_startup:
-    SEI ;disable interrupts
-    CLD ; turn off decimal mode
-
-    LDX #%1000000 ; disable sound IRQ
-    STX $4017
-
-    LDX #$00 ; disable PCM
-    STX $4010
-
-    
-
-    LDX #$00 ; clear PPU registers
-    STX $2000
-    STX $2001
-
-    ; all this code does is disable things for startup. will be enabled later down the line.
-    RTS
-
-
-startcode:
         LDA #$02 ; copy sprites to the right address
         STA $4014
         NOP ; wait for copy to complete
@@ -111,7 +96,28 @@ startcode:
         STA $2000 
         LDA #%00011110 ; show sprites and background
         STA $2001
-        RTS
+        forever:
+            JSR gameCode
+            jmp forever
+            
+;-----------------------------------;
+nmi:
+    pha
+    LDA frame_ready
+    BNE PpuDone
+    LDA #$02 ; load sprite range
+    STA $4014
+    ; Mark that we've handled the start of this frame already.
+    LDA #$01
+    STA frame_ready
+
+    PpuDone:
+    pla 
+    rti
+;-----------------------------------;
+
+;--------------subroutines--------------;
+
 
 
 
@@ -238,12 +244,14 @@ BallCollisionTest:
         CMP PaddlePosX
         BCC exit ; if its x value is less then the paddles, exit
 
-        SEC ; set carry flag, a must have for subtraction. works reverse from addition for some reason
-        SBC #PADDLE_OFFSET
-        SEC 
-        SBC #8 ; since sprites are drawn from the top left pixel, and the ball is dead center, i need to subtract the offset ( and the 4 from the other calculation).
-        CMP PaddlePosX
-        BCS exit ; if its x value is greater then then the paddles plus offset, exit
+        ;since the paddle is bound to screen, it means its edges will never be below or over 00 and FF. the balkl however, since it is 1 sprite, can be less then 0, so subtracting the paddle offset from it will cause issues at edges, as 00 - 18 = E8 (iirc)
+        LDA PaddlePosX
+        CLC 
+        ADC #PADDLE_OFFSET
+        CLC 
+        ADC #4 ; since sprites are drawn from the top left pixel, and the ball is dead center, i need to add the offset.
+        CMP ballPosX
+        BCC exit ; if its x value is greater then then the paddles plus offset, exit
 
         LDA ballProperties
         EOR #VERTICAL_BALL_MASK
@@ -261,8 +269,8 @@ MoveBall:
     HorizontalMove:
         LDA #HORIZONTAL_BALL_MASK
         BIT ballProperties ; if it is 0, move right. else move left
-        BEQ MoveBallRight
-        BNE MoveBallLeft
+        ;BEQ MoveBallRight
+        ;BNE MoveBallLeft
     VerticalMove:
         LDA #VERTICAL_BALL_MASK
         BIT ballProperties ; if it is 0, move down. else move up
