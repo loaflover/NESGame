@@ -37,6 +37,6 @@ $(OUTPUT): $(OBJECTS)
 
 # Clean rule for Windows
 clean:
-	del /s /q $(OUTPUT_DIR)\*.o $(OUTPUT)
+	del /s *.o $(OUTPUT)
 
 .PHONY: all clean
