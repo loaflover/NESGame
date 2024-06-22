@@ -15,25 +15,12 @@
 .segment "STARTUP"
     reset:
 
-        SEI ;disable interrupts
-        CLD ; turn off decimal mode
 
-        LDX #%1000000 ; disable sound IRQ
-        STX $4017
-
-        LDX #$00 ; disable PCM
-        STX $4010
-
+        ;has to be outside of a subroutine as return address is saved in stack
         LDX #$FF ; initialize stack
         TXS 
-
-        LDX #$00 ; clear PPU registers
-        STX $2000
-        STX $2001
-
+        JSR disable_for_startup
         JSR WaitForVblank
-
-
         TXA ; x is 0. this sets a to zero aswell
         clearmem:
             STA $0000, x ; stores a in 0[i]00 + x, clearing each page.
@@ -51,6 +38,50 @@
             BNE clearmem ; if x was not 0, jump back.
         JSR WaitForVblank
 
+
+        JSR startcode
+        forever:
+            JSR gameCode
+            jmp forever
+            
+;-----------------------------------;
+nmi:
+    pha
+    LDA frame_ready
+    BNE PpuDone
+    LDA #$02 ; load sprite range
+    STA $4014
+    ; Mark that we've handled the start of this frame already.
+    LDA #$01
+    STA frame_ready
+
+    PpuDone:
+    pla 
+    rti
+;-----------------------------------;
+
+;--------------subroutines--------------;
+disable_for_startup:
+    SEI ;disable interrupts
+    CLD ; turn off decimal mode
+
+    LDX #%1000000 ; disable sound IRQ
+    STX $4017
+
+    LDX #$00 ; disable PCM
+    STX $4010
+
+    
+
+    LDX #$00 ; clear PPU registers
+    STX $2000
+    STX $2001
+
+    ; all this code does is disable things for startup. will be enabled later down the line.
+    RTS
+
+
+startcode:
         LDA #$02 ; copy sprites to the right address
         STA $4014
         NOP ; wait for copy to complete
@@ -80,27 +111,11 @@
         STA $2000 
         LDA #%00011110 ; show sprites and background
         STA $2001
-        forever:
-            JSR gameCode
-            jmp forever
-            
-;-----------------------------------;
-nmi:
-    pha
-    LDA frame_ready
-    BNE PpuDone
-    LDA #$02 ; load sprite range
-    STA $4014
-    ; Mark that we've handled the start of this frame already.
-    LDA #$01
-    STA frame_ready
+        RTS
 
-    PpuDone:
-    pla 
-    rti
-;-----------------------------------;
 
-;--------------subroutines--------------;
+
+
 gameCode:
     ; checks if NMI has run yet
     :
