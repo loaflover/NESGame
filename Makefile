@@ -37,6 +37,6 @@ $(OUTPUT): $(OBJECTS)
 
 # Clean rule for Windows
 clean:
-	del /s *.o $(OUTPUT)
+	del /s *.o *.nes
 
 .PHONY: all clean
