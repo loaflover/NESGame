@@ -1,4 +1,4 @@
-.import "Globals.s" ; this whole thing is just done so globals can be seen everywhere.
+.include "Globals.asm" ; this whole thing is just done so globals can be seen everywhere.
 .segment "HEADER"
     .byte 'N','E','S',$1A ; magic INES number, standard and required.
     .byte $02 ; number of 16KB prg rom bank's
