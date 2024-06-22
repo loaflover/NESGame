@@ -127,18 +127,46 @@ gameCode:
     :
     LDA frame_ready
     BEQ :- 
-
+    ; global subroutines for every frame
     JSR disable_all_oam_entries
-    JSR MovePaddle
-    JSR drawPaddle
+    ; call subroutine based on gamestate
+    LDA gamestate
+    CMP #TITLE_SCREEN
+    BEQ title_screen_code
+    CMP #GAME_OVER
+    BEQ game_over_code
 
-    JSR BallCollisionTest
-    JSR MoveBall
-    JSR drawBall
-        
+    JMP main_game ; if no other gamemode applies, it means were in a game loop
+    end_Game_logic:
+    ; set frame_ready to 0, so game code doesnt run again
     LDA #$00
     STA frame_ready
     RTS
+    main_game:
+        JSR MovePaddle
+        JSR drawPaddle
+
+        JSR BallCollisionTest
+        JSR MoveBall
+        JSR drawBall
+        JMP end_Game_logic
+    game_over_code:
+        JSR MovePaddle
+        JSR drawPaddle
+
+        JSR BallCollisionTest
+        JSR MoveBall
+        JSR drawBall
+        JMP end_Game_logic
+    title_screen_code:
+        JSR MovePaddle
+        JSR drawPaddle
+
+        JSR BallCollisionTest
+        JSR MoveBall
+        JSR drawBall
+        JMP end_Game_logic
+
 drawPaddle:
     LDX #$00
     drawPaddleLoop:
@@ -202,6 +230,35 @@ ReadController:
         BNE ReadControllerLoop
         LDX buttons
         RTS
+drawBackground:
+    LoadBackground:
+
+        LDA $2002             ; read PPU status to reset the high/low latch
+        LDA #$20
+        STA $2006             ; write the high byte of $2000 address
+        LDA #$00
+        STA $2006             ; write the low byte of $2000 address
+        LDX #$00              ; start out at 0
+    LoadBackgroundLoop:
+        LDA background, x     ; load data from address (background + the value in x)
+        STA $2007             ; write to PPU
+        INX                   ; X = X + 1
+        CPX #$80              ; Compare X to hex $80, decimal 128 - copying 128 bytes
+        BNE LoadBackgroundLoop  ; Branch to LoadBackgroundLoop if compare was Not Equal to zero
+    LoadAttribute:
+        LDA $2002             ; read PPU status to reset the high/low latch
+        LDA #$23
+        STA $2006             ; write the high byte of $23C0 address
+        LDA #$C0
+        STA $2006             ; write the low byte of $23C0 address
+        LDX #$00              ; start out at 0
+    LoadAttributeLoop:
+        LDA attribute, x      ; load data from address (attribute + the value in x)
+        STA $2007             ; write to PPU
+        INX                   ; X = X + 1
+        CPX #$08              ; Compare X to hex $08, decimal 8 - copying 8 bytes
+        BNE LoadAttributeLoop
+
 
 WaitForVblank:
     BIT $2002
@@ -217,7 +274,8 @@ BallCollisionTest:
             EOR #VERTICAL_BALL_MASK
             STA ballProperties
         downCollisionTest:
-            ; lose condition
+            LDA #GAME_OVER
+            STA gamestate
     vertical:
         LDX ballPosX
         leftCollisionTest:
@@ -269,8 +327,8 @@ MoveBall:
     HorizontalMove:
         LDA #HORIZONTAL_BALL_MASK
         BIT ballProperties ; if it is 0, move right. else move left
-        ;BEQ MoveBallRight
-        ;BNE MoveBallLeft
+        BEQ MoveBallRight
+        BNE MoveBallLeft
     VerticalMove:
         LDA #VERTICAL_BALL_MASK
         BIT ballProperties ; if it is 0, move down. else move up
