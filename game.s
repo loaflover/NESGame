@@ -96,14 +96,14 @@
         STX ballPosY
         LDX #%00000001
         STX ballProperties
-        LDX #TITLE_SCREEN
+        LDX #00
         STX gamestate
         CLI ; enable interrupts
         LDA #%10010000 ; generate NMI when Vblank happens. second bit tells PPU to use the second half of the sprites for background.
         STA $2000 
         LDA #%00011110 ; show sprites and background
         STA $2001
-        JSR drawBackground
+        ;JSR drawBackground
         forever:
             JSR gameCode
             jmp forever
@@ -145,6 +145,8 @@ gameCode:
     BEQ game_over_code
 
     JMP main_game ; if no other gamemode applies, it means were in a game loop
+    
+    
     end_Game_logic:
     ; set frame_ready to 0, so game code doesnt run again
     LDA #$00

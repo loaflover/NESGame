@@ -15,6 +15,8 @@
                 EOR #VERTICAL_BALL_MASK
                 STA ballProperties
             downCollisionTest:
+                CPX #MIN_Y
+                BNE vertical
                 LDA #GAME_OVER
                 STA gamestate
         vertical:
