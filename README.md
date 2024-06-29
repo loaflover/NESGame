@@ -12,17 +12,19 @@ all NES controller inputs can be read and handeled (although currently only 2 ar
 ### ⚽ excelent ball control
 ball is controlled using 3 bytes only, 2 for its position and 1 for its attributes. very easy to calculate collision with simple shapes (colliders can be simplified to squares or triangles for ease)
 ### 🧩 modularity
-each section that can be made into a subroutine or a macro is / is planned to be made into one. 
+each section that can be made into a subroutine or a macro is / is planned to be made into one.
+### 🛠️ make file!
+first goal that was reached! added a make file and clean script. still work to be donte onm it, however it works.
+### 😢 game over screen
+simple game over screen implemented, whith the general framework in place to add more screens.
 
 ## TODO
 ### 🧩🧩 increase modularity
 make catagroies of subroutines and macros and split into files. then, i can have these be shared across projects.
 ### 🧱 bricks
 every breakout game needs bricks... includes the background tiles and the table that holds their data (as with collision, obviously)
-### 🛠️ make file instead of bash script
-it will be faster as my project grows, as it can ignore certein unchanged files. also clean script.
 ### 🏆 game over. win screen, and levels
-this is a long term goal (at least the levels and win screen) as its not a core mechanic. more of a nice to have feature
+this is a long term goal (at least the levels and win screen) as its not a core mechanic. more of a nice to have feature. basic versions have been implemented, as stated above.
 ### 🎵 music
 music... for the game... not much to be said
 ## assembly instructions
