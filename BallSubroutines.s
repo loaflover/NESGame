@@ -5,6 +5,7 @@
     .export BallCollisionTest, drawBall, MoveBall
     .importzp buttons,frame_ready,PaddlePosX,ballPosX,ballPosY,ballProperties,gamestate, SubroutineInput
     .import BallSprites
+    .import switch_scene_Background
     BallCollisionTest:
         LDA ballProperties
         horizontal:
@@ -19,6 +20,7 @@
                 BNE vertical
                 LDA #GAME_OVER
                 STA gamestate
+                JSR switch_scene_Background
         vertical:
             LDX ballPosX
             leftCollisionTest:

@@ -9,11 +9,11 @@
     .byte $00 ; NTSC format
     ; prg - program. CHR - charecter (sprite related).
 
-    .import GameOverBG, WinBG, Palettes, PaddleSprites, BallSprites
+    .import GameOverBG, WinBG, Palettes, PaddleSprites, BallSprites, LevelBG
     .importzp buttons,frame_ready,PaddlePosX,ballPosX,ballPosY,ballProperties,gamestate, SubroutineInput
     .import drawPaddle, MovePaddle
     .import BallCollisionTest, drawBall, MoveBall
-    .export ReadController
+    .export ReadController, switch_scene_Background
 
 .segment "STARTUP"
     reset:
@@ -168,6 +168,38 @@ gameCode:
         JMP end_Game_logic
 
 
+switch_scene_Background:
+    LDA gamestate
+    CMP #WIN_SCREEN
+    BEQ win
+    CMP #GAME_OVER
+    BEQ game_over
+
+    JMP level
+
+    ; maybe add some exit code so the jsr and rts arent called each time?
+    game_over:
+        LDA #<GameOverBG 
+        STA SubroutineInput 
+        LDA #>GameOverBG 
+        STA SubroutineInput+1 
+        JSR drawBackground
+        RTS
+    win:
+        LDA #<WinBG 
+        STA SubroutineInput 
+        LDA #>WinBG 
+        STA SubroutineInput+1 
+        JSR drawBackground
+        RTS
+    level:
+        LDA #<LevelBG 
+        STA SubroutineInput 
+        LDA #>LevelBG 
+        STA SubroutineInput+1 
+        JSR drawBackground
+        RTS
+    
 
 ReadController:
     LDA #$01
@@ -195,10 +227,7 @@ drawBackground:
         LDA #$00
         STA $2006             ; write the low byte of $2000 address
 
-        LDA #<GameOverBG 
-        STA SubroutineInput 
-        LDA #>GameOverBG 
-        STA SubroutineInput+1 
+        
         LDY #0
         LDX #4
         LoadBackgroundLoop:
@@ -239,6 +268,8 @@ WaitForVblank:
         inx
         bne loop
         rts
+
+; ------------------ variables (nonzpage) --------------;
 .endproc
 .segment "VECTORS"
     .word nmi, reset, 0
