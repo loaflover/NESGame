@@ -1,6 +1,8 @@
 .exportzp buttons,frame_ready,PaddlePosX,ballPosX,ballPosY,ballProperties,gamestate, SubroutineInput
 .segment "ZEROPAGE"
     buttons: .RES 1
+    ; bit:       7     6     5     4     3     2     1     0
+    ; button:    A     B   select start  up   down  left right
     frame_ready: .RES 1
 
     PaddlePosX: .RES 1 ; these signify the leftmost paddle piece

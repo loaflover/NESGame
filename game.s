@@ -161,7 +161,12 @@ gameCode:
         JSR drawBall
         JMP end_Game_logic
     game_over_code:
-        ;JSR drawBackground
+        JSR ReadController
+        LDX buttons ; load buttons into register x
+        CPX #%10000000
+        BNE end_Game_logic
+        JMP reset
+
         JMP end_Game_logic
     title_screen_code:
         ;JSR drawBackground
